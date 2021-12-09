@@ -20,7 +20,7 @@
 #include <openssl/rand.h>
 #include <stdio.h>
 #include <math.h>
-#include <stdlib.h>
+#include "random_r.h"
 #include <string.h>
 #include <sys/time.h>
 #include <sys/types.h>
@@ -128,7 +128,7 @@ void *uniform_online_init(uint64_t maxoutputs, __uint128_t maxvalue,
   state->STATELEN = 256;
   state->buf = (char *)calloc(256, sizeof(char));
   state->rand_state =
-      (struct random_data *)calloc(1, sizeof(struct random_data));
+     (struct random_data *)calloc(1, sizeof(struct random_data));
 
   initstate_r(state->seed, state->buf, state->STATELEN, state->rand_state);
   return (void *)state;
@@ -204,8 +204,8 @@ void usage(char *name) {
       "                    uniform_online\n"
       "                    zipfian_pregen\n"
       "                  Default uniform_pregen ]\n"
-      "  -d datastruct  [ Default qf. ]\n"
-      "  -f outputfile  [ Default qf. ]\n",
+      "  -d datastruct  [ Default vqf. ]\n"
+      "  -f outputfile  [ Default vqf. ]\n",
       name);
 }
 
@@ -214,8 +214,8 @@ int main(int argc, char **argv) {
   unsigned int npoints = 0;
   uint64_t nslots = 0, nvals = 0;
   char *randmode = "uniform_pregen";
-  char *datastruct = "qf";
-  char *outputfile = "qf";
+  char *datastruct = "vqf";
+  char *outputfile = "vqf";
 
   filter filter_ds;
   rand_generator *vals_gen;
@@ -305,12 +305,12 @@ int main(int argc, char **argv) {
     vals_gen = &uniform_online;
     othervals_gen = &uniform_online;
   } else {
-    fprintf(stderr, "Unknown randmode.\n");
+    fprintf(stderr, "Unknown randmode %s.\n", randmode);
     usage(argv[0]);
     exit(1);
   }
 
-  if (strcmp(datastruct, "cf") == 0) {
+  if (strcmp(datastruct, "vqf") == 0) {
     filter_ds = cf;
     //	} else if (strcmp(datastruct, "gqf") == 0) {
     //		filter_ds = gqf;
@@ -319,7 +319,7 @@ int main(int argc, char **argv) {
     //	} else if (strcmp(datastruct, "bf") == 0) {
     //		filter_ds = bf;
   } else {
-    fprintf(stderr, "Unknown randmode.\n");
+    fprintf(stderr, "Unknown datastruct %s.\n", datastruct);
     usage(argv[0]);
     exit(1);
   }

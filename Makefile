@@ -1,4 +1,4 @@
-TARGETS= main main_tx main_id bm
+TARGETS= main main_tx # main_id bm
 
 OPT=-Ofast -g
 
@@ -10,9 +10,9 @@ endif
 
 HAVE_AVX512=$(filter-out 0,$(shell lscpu | grep avx512bw | wc -l))
 
-ifeq ($(THREAD),1)
+#ifeq ($(THREAD),1)
    OPT +=-DENABLE_THREADS
-endif
+#endif
 
 CXX = g++ -std=c++11 -fgnu-tm -frename-registers  -march=native
 CC = gcc -std=gnu11 -fgnu-tm -frename-registers  -march=native
@@ -22,11 +22,22 @@ LOC_INCLUDE=include
 LOC_SRC=src
 OBJDIR=obj
 
-CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
+PREFIX=	/usr/local
+INC=	-I. -I$(LOC_INCLUDE) -I$(PREFIX)/include -I$(PREFIX)/ssl/include
 
-CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 -I. -I$(LOC_INCLUDE)
+CXXFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 $(INC)
 
-LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) -lpthread -lssl -lcrypto -lm -litm
+CFLAGS += -Wall $(DEBUG) $(PROFILE) $(OPT) $(ARCH) -m64 $(INC)
+
+OS :=		$(shell uname -s)
+ifeq ($(OS), Darwin)
+WLR=		-Wl,-rpath -Wl,-R
+else
+WLR=		-Wl,-R
+endif
+LFL=	-L$(PREFIX)/lib -L$(PREFIX)/ssl/lib
+
+LDFLAGS += $(DEBUG) $(PROFILE) $(OPT) $(LFL) -lpthread -lssl -lcrypto -lm -litm
 
 #
 # declaration of dependencies
@@ -39,12 +50,12 @@ ifeq ($(HAVE_AVX512),1)
 main:							$(OBJDIR)/main.o $(OBJDIR)/vqf_filter.o $(OBJDIR)/shuffle_matrix_512.o $(OBJDIR)/shuffle_matrix_512_16.o 
 main_id:						$(OBJDIR)/main_id.o $(OBJDIR)/vqf_filter.o $(OBJDIR)/shuffle_matrix_512.o $(OBJDIR)/shuffle_matrix_512_16.o 
 main_tx:						$(OBJDIR)/main_tx.o $(OBJDIR)/vqf_filter.o $(OBJDIR)/shuffle_matrix_512.o $(OBJDIR)/shuffle_matrix_512_16.o 
-bm:							$(OBJDIR)/bm.o $(OBJDIR)/vqf_filter.o $(OBJDIR)/shuffle_matrix_512.o $(OBJDIR)/shuffle_matrix_512_16.o 
+bm:							$(OBJDIR)/bm.o $(OBJDIR)/random_r.o $(OBJDIR)/vqf_filter.o $(OBJDIR)/shuffle_matrix_512.o $(OBJDIR)/shuffle_matrix_512_16.o 
 else
 main:							$(OBJDIR)/main.o $(OBJDIR)/vqf_filter.o 
 main_id:						$(OBJDIR)/main_id.o $(OBJDIR)/vqf_filter.o
 main_tx:						$(OBJDIR)/main_tx.o $(OBJDIR)/vqf_filter.o
-bm:							$(OBJDIR)/bm.o $(OBJDIR)/vqf_filter.o 
+bm:							$(OBJDIR)/bm.o $(OBJDIR)/random_r.o $(OBJDIR)/vqf_filter.o 
 endif
 
 # dependencies between .o files and .cc (or .c) files
@@ -54,6 +65,9 @@ $(OBJDIR)/main.o: 			$(LOC_SRC)/main.cc
 $(OBJDIR)/main_id.o: 			$(LOC_SRC)/main_id.cc
 $(OBJDIR)/main_tx.o: 			$(LOC_SRC)/main_tx.cc
 $(OBJDIR)/bm.o: 			$(LOC_SRC)/bm.cc
+
+$(OBJDIR)/random_r.o: 			CXX=$(CC)
+$(OBJDIR)/random_r.o: 			$(LOC_SRC)/random_r.c
 
 $(OBJDIR)/vqf_filter.o: 			$(LOC_SRC)/vqf_filter.c
 
